@@ -1,7 +1,7 @@
 ﻿using APICatalogo.Models.Base;
 using System.Collections.ObjectModel;
 
-namespace APICatalogo.Models;
+namespace APICatalogo.Models.Entity;
 
 public class Categoria : BaseAll
 {
