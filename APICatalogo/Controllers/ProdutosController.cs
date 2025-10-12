@@ -14,10 +14,10 @@ namespace APICatalogo.Controllers
     [ApiController]
     public class ProdutosController : ControllerBase
     {
-        private readonly ProdutoService _service;
+        private readonly IProdutoService _service;
 
 
-        public ProdutosController(ProdutoService service)
+        public ProdutosController(IProdutoService service)
         {
             _service = service;
         }
@@ -30,7 +30,7 @@ namespace APICatalogo.Controllers
             return Ok(produto);
         }
 
-        [HttpGet("{id:int}", Name= "GetProdutoById")]
+        [HttpGet("{id:int}", Name = "GetProdutoById")]
         public async Task<ActionResult<Produto>> GetProdutoById(int id)
         {
             var produto = await _service.GetProdutoById(id);
@@ -44,14 +44,12 @@ namespace APICatalogo.Controllers
         }
 
         [HttpPost]
-        [ProducesResponseType(StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<Produto>> CreateProduto(ProdutoRequest request)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState); 
     
-            var produto = await _service.CriarProduto(request);
+             var produto = await _service.CriarProduto(request);
             
             if (produto is null)
                 return BadRequest("CategoriaId inválido.");
@@ -62,6 +60,9 @@ namespace APICatalogo.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> EditProduto(int id, ProdutoRequest request)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             var resultado = await _service.EditarProdutoAsync(id, request);
 
             if (!resultado.Sucesso)

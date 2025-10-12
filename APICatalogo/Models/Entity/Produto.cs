@@ -1,5 +1,6 @@
 ﻿using APICatalogo.Models.Base;
 using APICatalogo.Models.Entity;
+using System.ComponentModel.DataAnnotations;
 
 public class Produto : BaseAll
 {

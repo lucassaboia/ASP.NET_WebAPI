@@ -17,7 +17,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
                                           options.UseMySql(mySqlConnection,
                                           ServerVersion.AutoDetect(mySqlConnection)));
 
-builder.Services.AddScoped<ProdutoService>();
+builder.Services.AddScoped<IProdutoService, ProdutoService>();
+builder.Services.AddScoped<ICategoriaService, CategoriaService>();
+
 
 
 var app = builder.Build();

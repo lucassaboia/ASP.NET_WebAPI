@@ -14,23 +14,25 @@ namespace APICatalogo.Controllers
     [ApiController]
     public class CategoriasController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly ICategoriaService _service;
 
-        public CategoriasController(AppDbContext context)
+        public CategoriasController(ICategoriaService service)
         {
-            _context = context;
+            _service = service;
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Categoria>>> GetCategorias()
         {
-            return await _context.Categorias.ToListAsync();
+            var resultado = await _service.GetAllCategorias();
+
+            return Ok(resultado);
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<Categoria>> GetCategoriaById(int id)
         {
-            var categoria = await _context.Categorias.FindAsync(id);
+            var categoria = await _service.GetCategoriaById(id);
 
             if (categoria == null)
             {
@@ -41,58 +43,43 @@ namespace APICatalogo.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<Categoria>> CreateCategoria(Categoria categoria)
+        public async Task<ActionResult<Categoria>> CreateCategoria(CategoriaRequest categoria)
         {
-            categoria.Ativo = true;
-            categoria.DataInsercao = DateTime.Now;
-            _context.Categorias.Add(categoria);
-            await _context.SaveChangesAsync();
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var resultado = await _service.CriarCategoria(categoria);
+
+            if (!resultado.Sucesso)
+                return BadRequest(resultado.Mensagem);
+            
 
             return CreatedAtAction("GetCategoriaById", new { id = categoria.Id }, categoria);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> EditCategoria(int id, Categoria categoria)
+        public async Task<IActionResult> EditCategoria(int id, CategoriaRequest categoria)
         {
-            var categoriaExistente = await _context.Categorias.FindAsync(id);
-            if (categoriaExistente == null)
-                return NotFound();
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            categoriaExistente.Nome = categoria.Nome;
-            categoriaExistente.ImagemUrl = categoria.ImagemUrl;
-            categoriaExistente.DataAlteracao = DateTime.Now;
+            var resultado = await _service.EditarCategoriaAsync(id, categoria);
 
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                throw;
-            }
+            if (!resultado.Sucesso)
+                return BadRequest(resultado.Mensagem);
 
             return NoContent();
         }
-
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCategoria(int id)
         {
-            var categoria = await _context.Categorias.FindAsync(id);
-            if (categoria == null)
-            {
-                return NotFound();
-            }
+            var resultado = await _service.DeleteCategoria(id);
 
-            _context.Categorias.Remove(categoria);
-            await _context.SaveChangesAsync();
+            if (!resultado.Sucesso)
+                return BadRequest(resultado.Mensagem);
 
             return NoContent();
-        }
-
-        private bool CategoriaExists(int id)
-        {
-            return _context.Categorias.Any(e => e.Id == id);
         }
     }
 }
