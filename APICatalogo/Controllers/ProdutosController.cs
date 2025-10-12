@@ -14,26 +14,26 @@ namespace APICatalogo.Controllers
     [ApiController]
     public class ProdutosController : ControllerBase
     {
-        private readonly AppDbContext _context;
         private readonly ProdutoService _service;
 
 
-        public ProdutosController(ProdutoService service, AppDbContext context)
+        public ProdutosController(ProdutoService service)
         {
-            _context = context;
             _service = service;
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Produto>>> GetProdutosById()
+        public async Task<ActionResult<IEnumerable<Produto>>> GetAllProdutos()
         {
-            return await _context.Produtos.ToListAsync();
+            var produto = await _service.GetAllProdutos();
+
+            return Ok(produto);
         }
 
-        [HttpGet("{id:int}", Name="GetProduto")]
-        public async Task<ActionResult<Produto>> GetProduto(int id)
+        [HttpGet("{id:int}", Name= "GetProdutoById")]
+        public async Task<ActionResult<Produto>> GetProdutoById(int id)
         {
-            var produto = await _context.Produtos.FindAsync(id);
+            var produto = await _service.GetProdutoById(id);
 
             if (produto == null)
             {
@@ -51,70 +51,35 @@ namespace APICatalogo.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState); 
     
-            var produto = _service.CriarProduto(request);
+            var produto = await _service.CriarProduto(request);
             
-            if (!isCategoriaValid(produto.CategoriaId))
+            if (produto is null)
                 return BadRequest("CategoriaId inválido.");
 
-            _context.Produtos.Add(produto);
-
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetProduto), new { id = produto.Id }, produto);
+            return CreatedAtAction(nameof(GetProdutoById), new { id = produto.Dados.Id }, produto);
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> EditProduto(int id, ProdutoRequest request)
         {
-            if (!isCategoriaValid(request.CategoriaId))
-                return BadRequest("CategoriaId inserida inválida.");
+            var resultado = await _service.EditarProdutoAsync(id, request);
 
-            var produtoExistente = await _context.Produtos.FindAsync(id);
-            if (produtoExistente is null)
-                return BadRequest("ID de produto inexistente");
-
-            produtoExistente = _service.EditarProduto(produtoExistente, request);
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                throw;
-            }
+            if (!resultado.Sucesso)
+                return BadRequest(resultado.Mensagem);
 
             return NoContent();
         }
+
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProduto(int id)
         {
-            var produto = await _context.Produtos.FindAsync(id);
-            if (produto == null)
-            {
-                return NotFound();
-            }
-
-            produto.Ativo = false;
-            produto.DataExclusao = DateTime.Now;
-            _context.Produtos.Remove(produto);
-            await _context.SaveChangesAsync();
+            var resultado = await _service.DeleteProduto(id);
+            
+            if (!resultado.Sucesso)
+                return BadRequest(resultado.Mensagem);            
 
             return NoContent();
-        }
-
-        private bool isCategoriaValid(int? id)
-        {
-            if (id is null)
-                return true;
-
-            return _context.Categorias.Any(e => e.Id == id);
-        }
-
-        private bool ProdutoExists(int id)
-        {
-            return _context.Produtos.Any(e => e.Id == id);
-        }
+        }      
     }
 }
